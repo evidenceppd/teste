@@ -1,0 +1,116 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap');
+
+/* Force light mode by default */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+html:not(.dark) body,
+html:not(.dark) .bg-gray-50 {
+  background-color: #f9fafb !important;
+}
+
+html:not(.dark) .bg-white {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .text-gray-700 {
+  color: #374151 !important;
+  font-weight: 500 !important;
+}
+
+html:not(.dark) .text-gray-600 {
+  color: #4b5563 !important;
+  font-weight: 500 !important;
+}
+
+html:not(.dark) .text-gray-500 {
+  color: #6b7280 !important;
+  font-weight: 500 !important;
+}
+
+html:not(.dark) .font-medium {
+  font-weight: 600 !important;
+}
+
+html:not(.dark) .font-semibold {
+  font-weight: 700 !important;
+}
+
+html:not(.dark) .text-gray-800 {
+  color: #374151 !important;
+  font-weight: 700 !important;
+}
+
+html:not(.dark) .hover\:bg-gray-100:hover {
+  background-color: #f3f4f6 !important;
+}
+
+html:not(.dark) .hover\:bg-gray-50:hover {
+  background-color: #f9fafb !important;
+}
+
+html:not(.dark) .hover\:bg-teal-700:hover {
+  background-color: #0f766e !important;
+}
+
+html:not(.dark) .border-gray-200,
+html:not(.dark) .border-t {
+  border-color: #e5e7eb !important;
+}
+
+html:not(.dark) .bg-gray-200 {
+  background-color: #e5e7eb !important;
+}
+
+html:not(.dark) input {
+  color: #000000 !important;
+}
+
+/* Dark mode styles */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body,
+html.dark .bg-gray-50 {
+  background-color: #111827 !important;
+}
+
+html.dark .bg-white {
+  background-color: #1f2937 !important;
+}
+
+html.dark .text-gray-700 {
+  color: #d1d5db !important;
+}
+
+html.dark .text-gray-600 {
+  color: #9ca3af !important;
+}
+
+body {
+  margin: 0;
+  font-family: Figtree, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.submenu-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.submenu-wrapper.open {
+  grid-template-rows: 1fr;
+}
+
+.submenu-content {
+  overflow: hidden;
+}
