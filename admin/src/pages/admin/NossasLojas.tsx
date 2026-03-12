@@ -1,16 +1,33 @@
 ﻿import { useState, useRef } from 'react'
 import {
-  Plus,
   Pencil,
   Trash2,
-  AlertTriangle,
   ArrowLeft,
   ImageIcon,
   MapPin,
   Clock,
   Phone,
   Navigation,
+  X,
+  Store,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
+
+interface Departamento {
+  id: number
+  nome: string
+  fotos: string[]
+}
+
+const DEPARTAMENTOS_PADRAO = [
+  'Alimentos',
+  'HortiFruti',
+  'Padaria',
+  'Açougue',
+  'Pet',
+  'Papelaria',
+]
 
 interface Loja {
   id: number
@@ -28,6 +45,7 @@ interface Loja {
   linkMaps: string
   ordem: number
   cor: string
+  departamentos: Departamento[]
 }
 
 const mockLojas: Loja[] = [
@@ -47,6 +65,25 @@ const mockLojas: Loja[] = [
     linkMaps: '',
     ordem: 1,
     cor: '#f97316',
+    departamentos: DEPARTAMENTOS_PADRAO.map((nome, i) => ({ id: i + 1, nome, fotos: [] })),
+  },
+  {
+    id: 2,
+    nome: 'Loja 2',
+    imageUrl: '',
+    rua: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    cep: '',
+    horarioSemana: '',
+    horarioDomingo: '',
+    telefone: '',
+    whatsapp: '',
+    linkMaps: '',
+    ordem: 2,
+    cor: '#f97316',
+    departamentos: DEPARTAMENTOS_PADRAO.map((nome, i) => ({ id: i + 1, nome, fotos: [] })),
   },
 ]
 
@@ -56,10 +93,9 @@ interface LojaFormProps {
   loja: Loja | null
   onBack: () => void
   onSave: (data: Omit<Loja, 'id'>) => void
-  ordemAtual: number
 }
 
-function LojaForm({ loja, onBack, onSave, ordemAtual }: LojaFormProps) {
+function LojaForm({ loja, onBack, onSave }: LojaFormProps) {
   const [nome, setNome] = useState(loja?.nome ?? '')
   const [imageUrl, setImageUrl] = useState(loja?.imageUrl ?? '')
   const [rua, setRua] = useState(loja?.rua ?? '')
@@ -73,7 +109,44 @@ function LojaForm({ loja, onBack, onSave, ordemAtual }: LojaFormProps) {
   const [whatsapp, setWhatsapp] = useState(loja?.whatsapp ?? '')
   const [linkMaps, setLinkMaps] = useState(loja?.linkMaps ?? '')
   const [cor, setCor] = useState(loja?.cor ?? '#f97316')
+  const [departamentos, setDepartamentos] = useState<Departamento[]>(
+    loja?.departamentos ?? DEPARTAMENTOS_PADRAO.map((n, i) => ({ id: i + 1, nome: n, fotos: [] }))
+  )
+  const [expandedDept, setExpandedDept] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const deptFileRefs = useRef<Record<number, HTMLInputElement | null>>({})
+
+  const handleRemoveDept = (id: number) => {
+    setDepartamentos((prev) => prev.filter((d) => d.id !== id))
+  }
+
+  const handleDeptFotos = (id: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    const readers = files.map(
+      (file) =>
+        new Promise<string>((resolve) => {
+          const r = new FileReader()
+          r.onload = () => resolve(r.result as string)
+          r.readAsDataURL(file)
+        })
+    )
+    Promise.all(readers).then((urls) => {
+      setDepartamentos((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, fotos: [...d.fotos, ...urls] } : d))
+      )
+    })
+    // reset input so same file can be re-added
+    if (deptFileRefs.current[id]) deptFileRefs.current[id]!.value = ''
+  }
+
+  const handleRemoveFoto = (deptId: number, fotoIdx: number) => {
+    setDepartamentos((prev) =>
+      prev.map((d) =>
+        d.id === deptId ? { ...d, fotos: d.fotos.filter((_, i) => i !== fotoIdx) } : d
+      )
+    )
+  }
 
   const isEdit = loja !== null
 
@@ -102,6 +175,7 @@ function LojaForm({ loja, onBack, onSave, ordemAtual }: LojaFormProps) {
       linkMaps,
       cor,
       ordem: loja?.ordem ?? 0,
+      departamentos,
     })
   }
 
@@ -336,6 +410,94 @@ function LojaForm({ loja, onBack, onSave, ordemAtual }: LojaFormProps) {
           </div>
         </div>
 
+        {/* Fotos dos Departamentos */}
+        <div className={sectionClass}>
+          <h2 className="text-base font-semibold text-gray-700 border-b border-gray-100 pb-3 flex items-center gap-2">
+            <Store size={16} className="text-[#1a8a9f]" />
+            Fotos dos Departamentos
+          </h2>
+
+          <div className="space-y-3">
+            {departamentos.map((dept) => {
+              const isExpanded = expandedDept === dept.id
+              return (
+                <div key={dept.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                  {/* Header do departamento */}
+                  <div
+                    className="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer select-none"
+                    onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-800">{dept.nome}</span>
+                      {dept.fotos.length > 0 && (
+                        <span className="text-xs bg-[#1a8a9f]/10 text-[#1a8a9f] font-semibold px-2 py-0.5 rounded-full">
+                          {dept.fotos.length} foto{dept.fotos.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleRemoveDept(dept.id) }}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                        title="Remover departamento"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      {isExpanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+                    </div>
+                  </div>
+
+                  {/* Conteúdo expandido */}
+                  {isExpanded && (
+                    <div className="p-4 space-y-4">
+                      {/* Grade de fotos */}
+                      {dept.fotos.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {dept.fotos.map((foto, idx) => (
+                            <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-gray-200">
+                              <img src={foto} alt={`${dept.nome} ${idx + 1}`} className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFoto(dept.id, idx)}
+                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-500"
+                              >
+                                <X size={12} />
+                              </button>
+                              <div className="absolute bottom-1.5 left-1.5 text-[10px] font-medium bg-black/50 text-white px-1.5 py-0.5 rounded-full">
+                                {idx + 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Botão de upload */}
+                      <button
+                        type="button"
+                        onClick={() => deptFileRefs.current[dept.id]?.click()}
+                        className="w-full border-2 border-dashed border-gray-200 rounded-xl py-4 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:border-[#1a8a9f] hover:text-[#1a8a9f] hover:bg-[#1a8a9f]/5 transition-colors cursor-pointer"
+                      >
+                        <ImageIcon size={20} />
+                        <span className="text-sm font-medium">Clique para adicionar fotos</span>
+                        <span className="text-xs">Você pode selecionar várias fotos de uma vez</span>
+                      </button>
+                      <input
+                        ref={(el) => { deptFileRefs.current[dept.id] = el }}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => handleDeptFotos(dept.id, e)}
+                        className="hidden"
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         {/* Pré-visualização */}
         {(nome || imageUrl) && (
           <div className={sectionClass}>
@@ -344,7 +506,7 @@ function LojaForm({ loja, onBack, onSave, ordemAtual }: LojaFormProps) {
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
               {/* Imagem */}
-              <div className={ordemAtual % 2 === 0 ? 'lg:order-2' : ''}>
+              <div className="lg:order-2">
                 {imageUrl ? (
                   <img
                     src={imageUrl}
@@ -360,7 +522,7 @@ function LojaForm({ loja, onBack, onSave, ordemAtual }: LojaFormProps) {
                 )}
               </div>
               {/* Conteúdo */}
-              <div className={ordemAtual % 2 === 0 ? 'lg:order-1' : ''}>
+              <div className="lg:order-1">
                 {nome && (
                   <h3 className="text-4xl font-bold mb-6" style={{ color: cor }}>{nome}</h3>
                 )}
@@ -408,18 +570,44 @@ function LojaForm({ loja, onBack, onSave, ordemAtual }: LojaFormProps) {
                   )}
 
                   {linkMaps && (
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-white font-medium text-base shadow-lg hover:opacity-90 transition-opacity"
+                    <a
+                      href={linkMaps}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-white font-semibold text-base shadow-lg hover:opacity-90 transition-opacity"
                       style={{ backgroundColor: cor }}
                     >
                       <Navigation size={18} />
                       Como Chegar
-                    </button>
+                    </a>
                   )}
                 </div>
               </div>
             </div>
+
+            {/* Departamentos preview */}
+            {departamentos.some((d) => d.fotos.length > 0) && (
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Nossos Departamentos</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                  {departamentos.filter((d) => d.fotos.length > 0).map((dept) => (
+                    <div key={dept.id} className="relative overflow-hidden shadow-lg" style={{ width: '370px', height: '280px', borderRadius: '16px' }}>
+                      <img
+                        src={dept.fotos[0]}
+                        alt={dept.nome}
+                        className="w-full h-full object-cover"
+                      />
+                      <div
+                        className="absolute bottom-0 left-0 right-0 py-4 px-3 flex items-center justify-center"
+                        style={{ backgroundColor: '#ff1b2d' }}
+                      >
+                        <span className="text-white font-bold text-center leading-tight tracking-wide" style={{ fontSize: '24px' }}>{dept.nome}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -443,82 +631,30 @@ function LojaForm({ loja, onBack, onSave, ordemAtual }: LojaFormProps) {
   )
 }
 
-// ── Modal de exclusão ────────────────────────────────────────────────────────
-
-interface DeleteModalProps {
-  nome: string
-  onConfirm: () => void
-  onCancel: () => void
-}
-
-function DeleteModal({ nome, onConfirm, onCancel }: DeleteModalProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 flex flex-col items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
-          <AlertTriangle size={28} className="text-red-500" />
-        </div>
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Excluir loja</h3>
-          <p className="text-sm text-gray-500">
-            Tem certeza que deseja excluir{' '}
-            <span className="font-medium text-gray-700">"{nome}"</span>?
-            Esta ação não pode ser desfeita.
-          </p>
-        </div>
-        <div className="flex gap-3 w-full">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors cursor-pointer"
-          >
-            Excluir
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Card da Loja ──────────────────────────────────────────────────────────────
 
 interface LojaCardProps {
   loja: Loja
   onEdit: (loja: Loja) => void
-  onDelete: (loja: Loja) => void
 }
 
-function LojaCard({ loja, onEdit, onDelete }: LojaCardProps) {
+function LojaCard({ loja, onEdit }: LojaCardProps) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <span className="text-xs font-medium text-gray-500">Loja #{loja.ordem}</span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onEdit(loja)}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#1a8a9f] transition-colors cursor-pointer"
-            title="Editar"
-          >
-            <Pencil size={15} />
-          </button>
-          <button
-            onClick={() => onDelete(loja)}
-            className="p-2 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-500 transition-colors cursor-pointer"
-            title="Excluir"
-          >
-            <Trash2 size={15} />
-          </button>
-        </div>
+        <button
+          onClick={() => onEdit(loja)}
+          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#1a8a9f] transition-colors cursor-pointer"
+          title="Editar"
+        >
+          <Pencil size={15} />
+        </button>
       </div>
 
       <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Imagem */}
-        <div className={loja.ordem % 2 === 0 ? 'lg:order-2' : ''}>
+        <div className="lg:order-2">
           {loja.imageUrl ? (
             <img
               src={loja.imageUrl}
@@ -535,7 +671,7 @@ function LojaCard({ loja, onEdit, onDelete }: LojaCardProps) {
         </div>
 
         {/* Conteúdo */}
-        <div className={loja.ordem % 2 === 0 ? 'lg:order-1' : ''}>
+        <div className="lg:order-1">
           <h3 className="text-4xl font-bold mb-6" style={{ color: loja.cor }}>{loja.nome}</h3>
           <div className="space-y-4">
             {(loja.rua || loja.bairro || loja.cidade) && (
@@ -581,18 +717,55 @@ function LojaCard({ loja, onEdit, onDelete }: LojaCardProps) {
             )}
 
             {loja.linkMaps && (
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-white font-medium text-base shadow-lg hover:opacity-90 transition-opacity"
+              <a
+                href={loja.linkMaps}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-white font-semibold text-base shadow-lg hover:opacity-90 transition-opacity"
                 style={{ backgroundColor: loja.cor }}
               >
                 <Navigation size={18} />
                 Como Chegar
-              </button>
+              </a>
             )}
           </div>
         </div>
       </div>
+
+      {/* Departamentos */}
+      {loja.departamentos?.some((d) => d.fotos.length > 0) && (
+        <div className="px-5 pb-5 pt-1">
+          <div className="border-t border-gray-100 pt-5">
+            <h4 className="text-base font-bold text-gray-800 mb-4">Nossos Departamentos</h4>
+            <div className="flex flex-wrap gap-4">
+              {loja.departamentos.filter((d) => d.fotos.length > 0).map((dept) => (
+                <div
+                  key={dept.id}
+                  className="relative overflow-hidden shadow-lg shrink-0"
+                  style={{ width: '370px', height: '280px', borderRadius: '16px' }}
+                >
+                  <img
+                    src={dept.fotos[0]}
+                    alt={dept.nome}
+                    className="w-full h-full object-cover"
+                  />
+                  <div
+                    className="absolute bottom-0 left-0 right-0 py-4 px-3 flex items-center justify-center"
+                    style={{ backgroundColor: '#ff1b2d' }}
+                  >
+                    <span
+                      className="text-white font-bold text-center leading-tight tracking-wide"
+                      style={{ fontSize: '24px' }}
+                    >
+                      {dept.nome}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -603,13 +776,6 @@ export default function NossasLojas() {
   const [lojas, setLojas] = useState<Loja[]>(mockLojas)
   const [view, setView] = useState<'list' | 'form'>('list')
   const [editingLoja, setEditingLoja] = useState<Loja | null>(null)
-  const [deletingLoja, setDeletingLoja] = useState<Loja | null>(null)
-  const nextId = useRef(mockLojas.length + 1)
-
-  const handleNew = () => {
-    setEditingLoja(null)
-    setView('form')
-  }
 
   const handleEdit = (loja: Loja) => {
     setEditingLoja(loja)
@@ -626,25 +792,8 @@ export default function NossasLojas() {
       setLojas((prev) =>
         prev.map((l) => (l.id === editingLoja.id ? { ...l, ...data } : l))
       )
-    } else {
-      const newLoja: Loja = {
-        id: nextId.current++,
-        ...data,
-        ordem: lojas.length + 1,
-      }
-      setLojas((prev) => [...prev, newLoja])
     }
     handleBack()
-  }
-
-  const handleDeleteConfirm = () => {
-    if (!deletingLoja) return
-    setLojas((prev) =>
-      prev
-        .filter((l) => l.id !== deletingLoja.id)
-        .map((l, i) => ({ ...l, ordem: i + 1 }))
-    )
-    setDeletingLoja(null)
   }
 
   if (view === 'form') {
@@ -653,74 +802,28 @@ export default function NossasLojas() {
         loja={editingLoja}
         onBack={handleBack}
         onSave={handleSave}
-        ordemAtual={editingLoja?.ordem ?? lojas.length + 1}
       />
     )
   }
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Nossas Lojas</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Gerencie as informações das lojas exibidas no site
-          </p>
-        </div>
-        <button
-          onClick={handleNew}
-          className="self-end sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1a8a9f] hover:bg-[#156e7f] text-white text-sm font-medium transition-colors cursor-pointer"
-        >
-          <Plus size={18} />
-          Nova Loja
-        </button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Nossas Lojas</h1>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Gerencie as informações das lojas exibidas no site
+        </p>
       </div>
 
-      {lojas.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 flex flex-col items-center gap-3 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-            <MapPin size={28} className="text-gray-400" />
-          </div>
-          <p className="font-medium text-gray-600">Nenhuma loja cadastrada</p>
-          <p className="text-sm text-gray-400">
-            Clique em "Nova Loja" para cadastrar as lojas do supermercado.
-          </p>
-          <button
-            onClick={handleNew}
-            className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1a8a9f] hover:bg-[#156e7f] text-white text-sm font-medium transition-colors cursor-pointer"
-          >
-            <Plus size={16} />
-            Nova Loja
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {lojas.map((loja) => (
-            <LojaCard
-              key={loja.id}
-              loja={loja}
-              onEdit={handleEdit}
-              onDelete={setDeletingLoja}
-            />
-          ))}
-
-          <button
-            onClick={handleNew}
-            className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium text-gray-400 hover:text-[#1a8a9f] hover:border-[#1a8a9f] hover:bg-[#1a8a9f]/5 transition-colors cursor-pointer"
-          >
-            <Plus size={18} />
-            Adicionar nova loja
-          </button>
-        </div>
-      )}
-
-      {deletingLoja && (
-        <DeleteModal
-          nome={deletingLoja.nome}
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => setDeletingLoja(null)}
-        />
-      )}
+      <div className="space-y-4">
+        {lojas.map((loja) => (
+          <LojaCard
+            key={loja.id}
+            loja={loja}
+            onEdit={handleEdit}
+          />
+        ))}
+      </div>
     </div>
   )
 }

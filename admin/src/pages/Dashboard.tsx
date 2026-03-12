@@ -14,6 +14,8 @@ import FaleConosco from './admin/FaleConosco'
 import RedesSociais from './admin/RedesSociais'
 import Newsletter from './admin/Newsletter'
 import TrabalheConosco from './admin/TrabalheConosco'
+import Acoes from './admin/Acoes'
+import Campanhas from './admin/Campanhas'
 import { Users, Smartphone, Shield } from 'lucide-react'
 
 export type SidebarSize = 'default' | 'condensed' | 'hidden' | 'small-hover-active' | 'small-hover'
@@ -156,6 +158,10 @@ export default function Dashboard() {
             <FaleConosco />
           ) : activePage === 'content-redes-sociais' ? (
             <RedesSociais />
+          ) : activePage === 'content-acoes' ? (
+            <Acoes />
+          ) : activePage === 'content-campanhas' ? (
+            <Campanhas />
           ) : activePage === 'newsletter' ? (
             <Newsletter />
           ) : activePage === 'trabalhe-conosco' ? (

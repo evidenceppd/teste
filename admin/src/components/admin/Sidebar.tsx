@@ -54,6 +54,8 @@ const menuItems: MenuItem[] = [
       { id: 'content-nossas-lojas', label: 'Nossas Lojas' },
       { id: 'content-fale-conosco', label: 'Fale Conosco' },
       { id: 'content-redes-sociais', label: 'Redes Sociais' },
+      { id: 'content-acoes', label: 'Ações' },
+      { id: 'content-campanhas', label: 'Campanhas' },
     ]
   },
 ]
