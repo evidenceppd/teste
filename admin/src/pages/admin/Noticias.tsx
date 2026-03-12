@@ -30,7 +30,7 @@ const categoriaColors: Record<string, string> = {
 }
 
 const mockNoticias: Noticia[] = [
-  {
+  { 
     id: 1,
     categoria: 'Promoções',
     title: 'Semana do Frango: descontos de até 30%',
